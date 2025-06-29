@@ -1,4 +1,4 @@
-import org.ysb33r.gradle.jruby.api.base.tasks.JRubyPrepare
+import java.time.Duration
 
 /*
     adding the plugin jars to the classpath to apply them later.
@@ -42,8 +42,7 @@ ext {
   assertjVersion = '3.24.2'
 
   // gem versions
-  // TODO bump to 3
-  asciidoctorJVersion = project.hasProperty('asciidoctorJVersion') ? project.asciidoctorJVersion : '2.5.13'
+  asciidoctorJVersion = project.hasProperty('asciidoctorJVersion') ? project.asciidoctorJVersion : '3.0.0'
   asciidoctorPdfGemVersion = project.hasProperty('asciidoctorPdfGemVersion') ? project.asciidoctorPdfGemVersion : '2.3.19'
 
   addressableVersion = '2.8.7'
@@ -68,28 +67,25 @@ subprojects {
   def _status = status
   apply plugin: 'java'
   apply from: "$rootDir/gradle/providedConfiguration.gradle"
-
   status = _status
 
-  // NOTE sourceCompatibility & targetCompatibility are set in gradle.properties to meet requirements of Gradle
-  // Must redefine here to work around a bug in the Eclipse plugin
-  sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
-
   plugins.withType(JavaPlugin).configureEach {
+
+    def javaVersion = getToolchainVersion()
+
     project.tasks.withType(JavaCompile).configureEach { task ->
-      if (JavaVersion.current().isJava11Compatible()) {
-        task.options.release = 11
-      }
       if (project.hasProperty("showDeprecation")) {
         options.compilerArgs << "-Xlint:deprecation"
       }
       if (project.hasProperty("showUnchecked")) {
         options.compilerArgs << "-Xlint:unchecked"
       }
+      task.options.release = javaVersion
     }
-    project.tasks.withType(GroovyCompile).configureEach { task ->
-      if (JavaVersion.current().isJava11Compatible()) {
-        task.options.release = 8
+
+    java {
+      toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVersion)
       }
     }
   }
@@ -131,7 +127,14 @@ subprojects {
       }
     }
   }
+}
 
+// TODO update logic to consider JRuby version
+def getToolchainVersion() {
+  if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+      return 21
+  }
+  return 11
 }
 
 configure(subprojects.findAll {it.name != 'itest'}) {
@@ -152,7 +155,7 @@ configure(subprojects.findAll {it.name != 'itest'}) {
 
   if (JavaVersion.current().isJava8Compatible()) {
     javadoc {
-      // Oracle JDK8 likes to fail the build over spoiled HTML
+      // Oracle JDK11+ likes to fail the build over spoiled HTML
       options.addStringOption('Xdoclint:none', '-quiet')
     }
   }
@@ -160,26 +163,7 @@ configure(subprojects.findAll {it.name != 'itest'}) {
   java {
     withJavadocJar()
     withSourcesJar()
-    toolchain {
-      languageVersion = JavaLanguageVersion.of(21)
-    }
   }
-
-}
-
-configure(subprojects.findAll { it.name != 'itest'}) {
-
-  jruby {
-    jrubyVersion = jrubyVersion
-  }
-
-  compileJava {
-    options.release = 11
-  }
-
-  // QUESTION is this the right place to insert this task dependency in the lifecycle?
-  // IMPORTANT The TMP or TEMP environment variable must be set for the gem install command to work on Windows
-//  processResources.dependsOn jrubyPrepare
 }
 
 nexusPublishing {
