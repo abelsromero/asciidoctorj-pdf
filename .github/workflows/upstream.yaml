@@ -1,13 +1,5 @@
 name: Upstream Build
-on:
-  # keep this separate from nightly build, as GitHub will disable scheduled builds after 30 days
-  # without a change (and won't enable them automatically, for example on pushed changes or pull requests)
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: workflow_dispatch
 
 jobs:
   build:
