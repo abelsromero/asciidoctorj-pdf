@@ -41,8 +41,9 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build & Test
         run: |
-          ./gradlew -S -Pskip.signing assemble
-          ./gradlew -S -Pskip.signing check
+          ./gradlew -version
+          ./gradlew -PjrubyVersion=${{ matrix.jRubyVersion }} -S -Pskip.signing assemble
+          ./gradlew -PjrubyVersion=${{ matrix.jRubyVersion }} -S -Pskip.signing check
   build-windows:
     name: Build
     strategy:
