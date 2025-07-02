@@ -75,5 +75,5 @@ jobs:
       - name: Build & Test
         shell: cmd
         run: |
-          gradlew.bat -S -Pskip.signing assemble
-          gradlew.bat -S -Pskip.signing check
+          gradlew.bat -PjrubyVersion=${{ matrix.jRubyVersion }} -S -Pskip.signing assemble
+          gradlew.bat -PjrubyVersion=${{ matrix.jRubyVersion }} -S -Pskip.signing check
